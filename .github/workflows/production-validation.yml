@@ -1,0 +1,52 @@
+name: Production Validation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate metadata on Production
+    runs-on: ubuntu-latest
+    environment: Production
+    permissions:
+      contents: read
+    env:
+      SF_USERNAME: ${{ secrets.SF_USERNAME }}
+      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
+      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
+      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Salesforce CLI
+        run: npm install --global @salesforce/cli
+
+      - name: Validate auth configuration
+        run: bash .github/scripts/validate-auth.sh
+
+      - name: Authenticate to Salesforce
+        run: bash .github/scripts/authenticate-sf.sh
+
+      - name: Generate delta package and validate deployment
+        run: bash .github/scripts/run-sf-validation.sh "${{ github.event.before || 'HEAD~1' }}" "${{ runner.temp }}/sf-delta"
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-validation-artifacts
+          path: |
+            ${{ runner.temp }}/sf-delta
+          if-no-files-found: warn
