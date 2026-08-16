@@ -1,23 +1,34 @@
 name: CI Validation
 
 on:
-  push:
+  pull_request:
     branches:
       - DEV
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 jobs:
+  code-scan:
+    name: Static code scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Placeholder static code scan
+        run: |
+          echo "Static code scanning is enabled and reserved for future checks."
+          echo "No failing rules are enforced yet."
+
   validate:
     name: Validate metadata on CI
+    needs: code-scan
     runs-on: ubuntu-latest
     environment: CI
     permissions:
       contents: read
     env:
-      SF_USERNAME: ${{ secrets.SF_USERNAME }}
-      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
-      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
-      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
     steps:
       - name: Checkout repository
@@ -40,7 +51,7 @@ jobs:
         run: bash .github/scripts/authenticate-sf.sh
 
       - name: Generate delta package and validate deployment
-        run: bash .github/scripts/run-sf-validation.sh "${{ github.event.before || 'HEAD~1' }}" "${{ runner.temp }}/sf-delta"
+        run: bash .github/scripts/run-sf-validation.sh "${{ github.event.pull_request.base.sha || github.event.before || 'HEAD~1' }}" "${{ runner.temp }}/sf-delta"
 
       - name: Upload validation artifacts
         if: always()

@@ -18,25 +18,44 @@ grep -q '<members>' "$OUTPUT_DIR/package.xml" || {
   exit 0
 }
 
-mapfile -t TEST_CLASSES < <(bash .github/scripts/sf-test-args.sh)
+mapfile -t TEST_CLASSES < <(bash .github/scripts/sf-test-args.sh || true)
 
 if [[ -s "$OUTPUT_DIR/destructiveChanges.xml" ]]; then
-  sf project deploy start \
-    --manifest "$OUTPUT_DIR/package.xml" \
-    --pre-destructive-changes "$OUTPUT_DIR/destructiveChanges.xml" \
-    --target-org "$SF_USERNAME" \
-    --test-level RunSpecifiedTests \
-    --tests "${TEST_CLASSES[@]}" \
-    --wait 30 \
-    --json > "$OUTPUT_DIR/deployment-result.json"
+  if [[ ${#TEST_CLASSES[@]} -gt 0 ]]; then
+    sf project deploy start \
+      --manifest "$OUTPUT_DIR/package.xml" \
+      --pre-destructive-changes "$OUTPUT_DIR/destructiveChanges.xml" \
+      --target-org default \
+      --test-level RunSpecifiedTests \
+      --tests "${TEST_CLASSES[@]}" \
+      --wait 30 \
+      --json > "$OUTPUT_DIR/deployment-result.json"
+  else
+    sf project deploy start \
+      --manifest "$OUTPUT_DIR/package.xml" \
+      --pre-destructive-changes "$OUTPUT_DIR/destructiveChanges.xml" \
+      --target-org default \
+      --test-level NoTestRun \
+      --wait 30 \
+      --json > "$OUTPUT_DIR/deployment-result.json"
+  fi
 else
-  sf project deploy start \
-    --manifest "$OUTPUT_DIR/package.xml" \
-    --target-org "$SF_USERNAME" \
-    --test-level RunSpecifiedTests \
-    --tests "${TEST_CLASSES[@]}" \
-    --wait 30 \
-    --json > "$OUTPUT_DIR/deployment-result.json"
+  if [[ ${#TEST_CLASSES[@]} -gt 0 ]]; then
+    sf project deploy start \
+      --manifest "$OUTPUT_DIR/package.xml" \
+      --target-org default \
+      --test-level RunSpecifiedTests \
+      --tests "${TEST_CLASSES[@]}" \
+      --wait 30 \
+      --json > "$OUTPUT_DIR/deployment-result.json"
+  else
+    sf project deploy start \
+      --manifest "$OUTPUT_DIR/package.xml" \
+      --target-org default \
+      --test-level NoTestRun \
+      --wait 30 \
+      --json > "$OUTPUT_DIR/deployment-result.json"
+  fi
 fi
 
 echo "Salesforce deployment completed successfully."

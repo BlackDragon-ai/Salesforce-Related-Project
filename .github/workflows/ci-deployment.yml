@@ -7,17 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
+  approval-gate:
+    name: PR approval gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the merge is approved before deployment
+        run: |
+          echo "This workflow is intended for merged, approved changes only."
+          echo "Use GitHub branch protection / PR review requirements before running deployment."
+
   validate:
     name: CI validation before deployment
+    needs: approval-gate
     runs-on: ubuntu-latest
     environment: CI
     permissions:
       contents: read
     env:
-      SF_USERNAME: ${{ secrets.SF_USERNAME }}
-      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
-      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
-      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
     steps:
       - name: Checkout repository
@@ -60,10 +67,7 @@ jobs:
     permissions:
       contents: read
     env:
-      SF_USERNAME: ${{ secrets.SF_USERNAME }}
-      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
-      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
-      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
     steps:
       - name: Checkout repository

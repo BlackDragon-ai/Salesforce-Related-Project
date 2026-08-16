@@ -4,17 +4,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  approval-gate:
+    name: Manual approval gate
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - name: Wait for production approval
+        run: echo "Production deployment requires GitHub Environment approval."
+
   validate:
     name: Production validation before deployment
+    needs: approval-gate
     runs-on: ubuntu-latest
     environment: Production
     permissions:
       contents: read
     env:
-      SF_USERNAME: ${{ secrets.SF_USERNAME }}
-      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
-      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
-      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
     steps:
       - name: Checkout repository
@@ -57,10 +63,7 @@ jobs:
     permissions:
       contents: read
     env:
-      SF_USERNAME: ${{ secrets.SF_USERNAME }}
-      SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
-      SF_JWT_KEY: ${{ secrets.SF_JWT_KEY }}
-      SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+      SFDX_AUTH_URL: ${{ secrets.SFDX_AUTH_URL }}
       SF_TEST_CLASSES: ${{ vars.SF_TEST_CLASSES }}
     steps:
       - name: Checkout repository

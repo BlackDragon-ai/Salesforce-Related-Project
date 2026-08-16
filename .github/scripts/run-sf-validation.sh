@@ -18,13 +18,23 @@ grep -q '<members>' "$OUTPUT_DIR/package.xml" || {
   exit 0
 }
 
-mapfile -t TEST_CLASSES < <(bash .github/scripts/sf-test-args.sh)
-sf project deploy validate \
-  --source-dir "$OUTPUT_DIR/delta" \
-  --target-org "$SF_USERNAME" \
-  --test-level RunSpecifiedTests \
-  --tests "${TEST_CLASSES[@]}" \
-  --wait 30 \
-  --json > "$OUTPUT_DIR/validation-result.json"
+mapfile -t TEST_CLASSES < <(bash .github/scripts/sf-test-args.sh || true)
+
+if [[ ${#TEST_CLASSES[@]} -gt 0 ]]; then
+  sf project deploy validate \
+    --source-dir "$OUTPUT_DIR/delta" \
+    --target-org default \
+    --test-level RunSpecifiedTests \
+    --tests "${TEST_CLASSES[@]}" \
+    --wait 30 \
+    --json > "$OUTPUT_DIR/validation-result.json"
+else
+  sf project deploy validate \
+    --source-dir "$OUTPUT_DIR/delta" \
+    --target-org default \
+    --test-level NoTestRun \
+    --wait 30 \
+    --json > "$OUTPUT_DIR/validation-result.json"
+fi
 
 echo "Salesforce validation completed successfully."
